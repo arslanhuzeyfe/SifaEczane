@@ -1,106 +1,68 @@
-# 💊 Şifa Eczanesi Otomasyon Sistemi
+# Şifa Eczanesi Otomasyon Sistemi
 
-BSM218 Veritabanı Yönetim Sistemleri — Final Ek Ödevi
+BSM218 Veritabanı Yönetim Sistemleri - Final Ek Ödevi
 
-## 📐 N-Katmanlı Mimari (N-Tier Architecture)
+## N-Katmanlı Mimari (N-Tier Architecture)
 
-```
-┌──────────────────────────────────────────┐
-│   Presentation Layer (UI)                │
-│   index.php, musteriler.php, ilaclar.php │
-│   satislar.php, odemeler.php, raporlar   │
-├──────────────────────────────────────────┤
-│   Business Layer (BL)                    │
-│   bl/EczaneBL.php                        │
-├──────────────────────────────────────────┤
-│   Data Access Layer (DAL)                │
-│   dal/EczaneDAL.php                      │
-│   ❗ SADECE Stored Procedure çağrıları   │
-├──────────────────────────────────────────┤
-│   MySQL Stored Procedures / Functions    │
-│   / Triggers                             │
-└──────────────────────────────────────────┘
-```
+Presentation Layer (UI) -> Business Layer (BL) -> Data Access Layer (DAL) -> MySQL SP
 
-**❗ Hiçbir katmanda doğrudan SELECT/INSERT/UPDATE/DELETE komutu kullanılmaz.**
+Hicbir katmanda dogrudan SELECT/INSERT/UPDATE/DELETE komutu kullanilmaz.
 
-## 🛠️ Kurulum (CachyOS / Arch Linux)
+## Kurulum
 
-### 1. Gerekli Paketleri Kur
-```bash
-sudo pacman -S php mariadb
-```
+### Gereksinimler
+- PHP 8.0+
+- MySQL 8.0+
+- Web sunucusu veya PHP built-in server
 
-PHP'de PDO MySQL desteğini aç:
-```bash
-sudo sed -i 's/;extension=pdo_mysql/extension=pdo_mysql/' /etc/php/php.ini
-```
-
-### 2. MariaDB Kurulumu ve Başlatma
-```bash
-sudo mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
-sudo systemctl start mariadb
-sudo systemctl enable mariadb
-sudo mysql_secure_installation
-```
-
-### 3. Veritabanını Oluştur
-```bash
+### 1. Veritabanini Olustur
 mysql -u root -p < sifa_eczane.sql
-```
-Bu komut tabloları, stored procedure'leri, function'ları ve trigger'ları tek seferde oluşturur.
 
-### 4. Uygulamayı Çalıştır
-```bash
-cd SifaEczane
+### 2. Baglantıyı Yapilandir
+db.php dosyasinda su satirlari guncelle:
+- $username = 'kullanici_adin';
+- $password = 'sifren';
+
+### 3. Uygulamayi Calistir
 php -S localhost:8080
-```
-Tarayıcıda `http://localhost:8080` adresini aç.
+Tarayicida http://localhost:8080 adresini ac.
 
-### Alternatif: Windows (XAMPP) Kurulumu
-1. `SifaEczane` klasörünü `C:\xampp\htdocs\` altına kopyala
-2. phpMyAdmin'den `sifa_eczane.sql` dosyasını içe aktar
-3. `http://localhost/SifaEczane/` adresini aç
+## Dosya Yapisi
 
-## 📋 Dosya Yapısı
-
-```
 SifaEczane/
-├── db.php                 # PDO veritabanı bağlantısı
-├── header.php             # Ortak sayfa başlığı (navbar)
-├── footer.php             # Ortak sayfa sonu
-├── index.php              # Ana sayfa (Dashboard)
-├── musteriler.php         # Müşteri CRUD işlemleri
-├── ilaclar.php            # İlaç CRUD + stok yönetimi
-├── satislar.php           # Satış kayıtları (Trigger demo)
-├── odemeler.php           # Ödeme kayıtları
-├── raporlar.php           # Bakiye/Ciro/SKT raporları (Function demo)
-├── dal/
-│   └── EczaneDAL.php      # Data Access Layer (SADECE SP çağrıları)
-├── bl/
-│   └── EczaneBL.php       # Business Layer (doğrulama + iş kuralları)
-├── assets/
-│   └── style.css          # Arayüz stilleri
-└── sifa_eczane.sql        # Veritabanı kurulum scripti
-```
+- db.php
+- index.php
+- musteriler.php
+- ilaclar.php
+- satislar.php
+- odemeler.php
+- raporlar.php
+- test.php
+- dal/EczaneDAL.php
+- bl/EczaneBL.php
+- assets/style.css
+- sifa_eczane.sql
 
-## 🔧 Veritabanı Bileşenleri
+## Veritabani Bilesenleri
 
-| Tür | Adet | Örnekler |
-|-----|------|----------|
-| Tablo | 4 | ec_musteriler, ec_ilaclar, ec_satislar, ec_odemeler |
-| Stored Procedure | 24+ | sp_MusteriEkle, sp_SatisDetay, sp_OdemeDetay ... |
-| Function | 3 | fn_MusteriBakiye, fn_AylikCiro, fn_SKTKalanGun |
-| Trigger | 3 | tg_satis_kontrol, tg_stok_azalt, tg_ilac_skt_kontrol |
+Tablo: 4 adet (ec_musteriler, ec_ilaclar, ec_satislar, ec_odemeler)
+Stored Procedure: 24+
+Function: 3 (fn_MusteriBakiye, fn_AylikCiro, fn_SKTKalanGun)
+Trigger: 3 (tg_satis_kontrol, tg_stok_azalt, tg_ilac_skt_kontrol)
 
-## ⚡ Trigger Davranışları
+## Triggerlar
 
-- **tg_satis_kontrol** (BEFORE INSERT on ec_satislar): Stok yetersizse veya SKT geçmişse satışı engeller
-- **tg_stok_azalt** (AFTER INSERT on ec_satislar): Satış sonrası ilaç stoğunu otomatik azaltır
-- **tg_ilac_skt_kontrol** (BEFORE INSERT on ec_ilaclar): SKT bugünden önceyse ilaç eklemeyi engeller
+- tg_satis_kontrol: Stok yetersizse veya SKT gecmisse satisi engeller
+- tg_stok_azalt: Satis sonrasi stoku otomatik azaltir
+- tg_ilac_skt_kontrol: Gecmis SKT ile ilac eklemeyi engeller
 
-## 📊 Function Kullanımı (Raporlar Sayfası)
+## Functionlar
 
-- **fn_MusteriBakiye(id)** → Müşterinin borç/alacak bakiyesini döndürür
-- **fn_AylikCiro(yıl, ay)** → İlgili ayın toplam satış cirosunu döndürür
-- **fn_SKTKalanGun(id)** → İlacın son kullanma tarihine kalan gün sayısı
+- fn_MusteriBakiye: Musterinin bakiyesini hesaplar
+- fn_AylikCiro: Aylik toplam ciroyu hesaplar
+- fn_SKTKalanGun: Son kullanma tarihine kalan gun
+
+## Otomatik Test
+
+php test.php
+Sonuc: 26 / 26 test gecti
